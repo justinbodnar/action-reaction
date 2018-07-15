@@ -63,11 +63,16 @@ def postToFaceBook( verbose, config, section, text, filename ):
 	elif str(config.get(section,"scrape_video")) is "1":
 		if verbose:
 			print( "Video is about to be posted" )
-	# get facebook page id
-	fbPageID = config.get(section, "facebook_page_id")
-	url='https://graph-video.facebook.com/" + fbPageID + "/videos?access_token='+config.get(section,"facebook_long_lived_access_token")+'&title='+text2+'&description='+text
-	files = {'file':open(filename,'rb')}
-	flag = requests.post(url, files=files).text
+	try:
+		# get facebook page id
+		fbPageID = config.get(section, "facebook_page_id")
+		url="https://graph-video.facebook.com/" + fbPageID + "/videos?access_token="+config.get(section,"facebook_long_lived_access_token")+'&title='+text2+'&description='+text
+		if verbose:
+			print( url )
+		files = {'file':open(filename,'rb')}
+		flag = requests.post(url, files=files).text
+	except Exception as e:
+		print( e )
 	if verbose:
 		print( "Flag: " + flag )
 		print( "Posted to " + section + "'s FaceBook at " + str( time.time()) )
@@ -132,7 +137,8 @@ def grabData( verbose, picorvid, config, section, reddit ):
 				# if we're looking for videos, skip non video entries
 				try:
 					if picorvid is 2:
-						print( submission.url )
+						if verbose:
+							print( submission.url )
 						if submission.url[8:9] != "v":
 							continue
 					if verbose:
@@ -254,7 +260,7 @@ def grabData( verbose, picorvid, config, section, reddit ):
 # main function #
 def main():
 
-	verbose = True
+	verbose = False
 
 	config = ConfigParser.ConfigParser()
 	config.read( "config.ini" )
