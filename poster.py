@@ -18,7 +18,7 @@ from imgurpython import ImgurClient
 import ConfigParser
 
 # these are black listed words
-badwords = [ "reddit", "xpost", "crosspost", "x/post", "r/", "x-post", "nigg" ]
+badwords = [ ]
 
 ##########################################
 # print all albums and album_ids for a username
@@ -55,8 +55,11 @@ def postToFaceBook( verbose, config, section, text, filename ):
 		if verbose:
 			print( "Image is about to be posted." )
 #			print( "Token: " + config.get(section, "facebook_long_lived_access_token" ) )
-		graph = facebook.GraphAPI( config.get( section, "facebook_long_lived_access_token" ) )
-		graph.put_photo(image=open( filename, 'rb'), message = text)
+		try:
+			graph = facebook.GraphAPI( config.get( section, "facebook_long_lived_access_token" ) )
+			graph.put_photo(image=open( filename, 'rb'), message = text)
+		except Exception as e:
+			print( e )
 	elif str(config.get(section,"scrape_video")) is "1":
 		if verbose:
 			print( "Video is about to be posted" )
@@ -94,6 +97,9 @@ def postToTwitter( verbose, config, section, text, filename ):
 # function to grab pic/vid and title from reddit #
 def grabData( verbose, picorvid, config, section, reddit ):
 
+	if verbose:
+		print( "Entering grabData function." )
+
 	# get logfile path
 	log_file = "./logs/" + section + ".txt"
 
@@ -109,8 +115,11 @@ def grabData( verbose, picorvid, config, section, reddit ):
 		if verbose:
 			print( "Begining scrape of Reddit." )
 		submissions0 = reddit.subreddit(config.get( section, "subreddits")).hot(limit=250)
+		if verbose:
+			print( "Subreddits: " + config.get( section, "subreddits" ) )
 		submissions = []
 		for submission in submissions0:
+#			print( submission )
 			submissions.append( submission )
 		if verbose:
 			print( str(len(submissions)) + " submissions scraped." )
@@ -129,6 +138,7 @@ def grabData( verbose, picorvid, config, section, reddit ):
 					if verbose:
 						print( "Checking submission: " + str(submission.title) )
 					badWord = False
+					global badwords
 					for badword in badwords:
 						if badword in submission.title:
 							if verbose:
@@ -243,12 +253,21 @@ def grabData( verbose, picorvid, config, section, reddit ):
 #################
 # main function #
 def main():
-	verbose = False
+
+	verbose = True
+
+	config = ConfigParser.ConfigParser()
+	config.read( "config.ini" )
+
+	# load blacklist
+	global badwords
+	raw_blacklist = config.get( "words", "blacklist" )
+	badwords = raw_blacklist.split( "," )
 
 	# load configuration for reddit client objects
-	config = ConfigParser.ConfigParser()
+#	config = ConfigParser.ConfigParser()
 	try:
-		config.read( "config.ini" )
+#		config.read( "config.ini" )
 		reddit_client_id = config.get( "reddit", "reddit_client_id" )
 		reddit_client_secret = config.get( "reddit", "reddit_client_secret" )
 		reddit_username = config.get( "reddit", "reddit_username" )
@@ -266,6 +285,7 @@ def main():
 
 		if verbose:
 			print( "Current config.ini section: " + section )
+
 		#################################################
 		# check if this entry is enabled #
 		try:
@@ -283,11 +303,11 @@ def main():
 			if str( config.get( section, "scrape_image" ) ) is "1":
 				data_type = 1
 				if verbose:
-					print( "Scraping image." )
+					print( "Scraping image for " + section + "." )
 			elif str( config.get( section, "scrape_video" ) ) is "1":
 				data_type = 2
 				if verbose:
-					print( "Scraping video." )
+					print( "Scraping video for " + section + "." )
 			title, filename = grabData( verbose, data_type, config, section, reddit )
 			if verbose:
 				print( "Text returned from grabData function: " + title )
