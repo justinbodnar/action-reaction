@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
-
+#
+# action-reaction.py
+#
 # this python file contains the code to automate a social media cluster
-# all content is scraped from reddit
 
 import youtube_dl
 import twitter
@@ -13,15 +14,81 @@ import bs4
 import requests
 import random
 import urllib
+import ConfigParser
+
 from fake_useragent import UserAgent
 from imgurpython import ImgurClient
-import ConfigParser
+from wordpress_xmlrpc import Client, WordPressPost
+from wordpress_xmlrpc import WordPressPage
+from wordpress_xmlrpc.methods import posts
+from wordpress_xmlrpc.compat import xmlrpc_client
+from wordpress_xmlrpc.methods import media, posts
+#import os
+
+# verbose is global
+verbose = True
 
 # these are black listed words
 badwords = [ ]
 
-##########################################
-# print all albums and album_ids for a username
+######################################################################
+# class for posting to WordPress                                     #
+# https://gist.github.com/345161974/63573abdf1dc9c303d6740fb29496657 #
+######################################################################
+class Custom_WP_XMLRPC:
+	def post_article(self,wpUrl,wpUserName,wpPassword,articleTitle, articleCategories, articleContent, articleTags,PhotoUrl):
+		self.path=os.getcwd()+"\\00000001.jpg"
+		self.articlePhotoUrl=PhotoUrl
+		self.wpUrl=wpUrl
+		self.wpUserName=wpUserName
+		self.wpPassword=wpPassword
+		#Download File
+		f = open(self.path,'wb')
+		f.write(urllib.urlopen(self.articlePhotoUrl).read())
+		f.close()
+		#Upload to WordPress
+		client = Client(self.wpUrl,self.wpUserName,self.wpPassword)
+		filename = self.path
+		# prepare metadata
+		data = {'name': 'picture.jpg','type': 'image/jpg',}
+
+		# read the binary file and let the XMLRPC library encode it into base64
+		with open(filename, 'rb') as img:
+			data['bits'] = xmlrpc_client.Binary(img.read())
+		response = client.call(media.UploadFile(data))
+		attachment_id = response['id']
+		#Post
+		post = WordPressPost()
+		post.title = articleTitle
+		post.content = articleContent
+		post.terms_names = { 'post_tag': articleTags,'category': articleCategories}
+		post.post_status = 'publish'
+		post.thumbnail = attachment_id
+		post.id = client.call(posts.NewPost(post))
+		print 'Post Successfully posted. Its Id is: ',post.id
+
+
+
+##########################
+# post data to WordPress #
+def postToWordPress(  verbose, config, section, title, filename ):
+	if verbose:
+		print( "Entering post to WordPress function." )
+	wordpress_url = config.get( "wordpress", "url" )
+	wordpress_username = config.get( "wordpress", "username" )
+	wordpress_password = config.get( "wordpress", "password" )
+	if verbose:
+		print( "WordPress URL:  " + wordpress_url )
+		print( "WordPress user: " + wordpress_username )
+	try:
+		xmlrpc_object = Custom_WP_XMLRPC( )
+		xmlrpc_object.post_article( wordpress_url, wordpress_username, wordpress_password, title, "", " ", " ", filename )
+	except Exception as e:
+		print( e )
+
+
+#################################################
+# print all albums and album_ids for a username #
 def print_all_albums( client, username ):
         for album in client.get_account_albums(username):
                 album_title = album.title if album.title else 'Untitled'
@@ -63,16 +130,16 @@ def postToFaceBook( verbose, config, section, text, filename ):
 	elif str(config.get(section,"scrape_video")) is "1":
 		if verbose:
 			print( "Video is about to be posted" )
-	try:
-		# get facebook page id
-		fbPageID = config.get(section, "facebook_page_id")
-		url="https://graph-video.facebook.com/" + fbPageID + "/videos?access_token="+config.get(section,"facebook_long_lived_access_token")+'&title='+text2+'&description='+text
-		if verbose:
-			print( url )
-		files = {'file':open(filename,'rb')}
-		flag = requests.post(url, files=files).text
-	except Exception as e:
-		print( e )
+		try:
+			# get facebook page id
+			fbPageID = config.get(section, "facebook_page_id")
+			url="https://graph-video.facebook.com/" + fbPageID + "/videos?access_token="+config.get(section,"facebook_long_lived_access_token")+'&title='+text2+'&description='+text
+			if verbose:
+				print( url )
+			files = {'file':open(filename,'rb')}
+			flag = requests.post(url, files=files).text
+		except Exception as e:
+			print( e )
 	if verbose:
 		print( "Flag: " + flag )
 		print( "Posted to " + section + "'s FaceBook at " + str( time.time()) )
@@ -168,13 +235,18 @@ def grabData( verbose, picorvid, config, section, reddit ):
 					# download the image or video
 					# 1 implies picture, 2 implies video
 					if picorvid is 1:
-						r = requests.get( submission.url, allow_redirects=True)
-						filename = submission.url.split("/")[-1]
-						file = open( filename, 'wb' ).write( r.content )
-						if verbose:
-							print( submission.url )
-							print( "Downloaded image: " + filename )
-						notDone = False
+						# if we're using reddit, just pass back the URL
+						if str( config.get( section, "post_to_wordpress" ) ) == 0:
+							r = requests.get( submission.url, allow_redirects=True)
+							filename = submission.url.split("/")[-1]
+							file = open( filename, 'wb' ).write( r.content )
+							if verbose:
+								print( "Downloaded image: " + filename )
+						else:
+							filename = submission.url
+							if verbose:
+								print( "URL: " + str( submission.url ) )
+						notDonoe = False
 					elif picorvid is 2:
 						ydl_opts = {}
 						with youtube_dl.YoutubeDL(ydl_opts) as ydl:
@@ -260,7 +332,7 @@ def grabData( verbose, picorvid, config, section, reddit ):
 # main function #
 def main():
 
-	verbose = False
+	global verbose
 
 	config = ConfigParser.ConfigParser()
 	config.read( "config.ini" )
@@ -305,7 +377,7 @@ def main():
 				continue
 
 		try:
-			# grab the image/video
+			# scrape data
 			if str( config.get( section, "scrape_image" ) ) is "1":
 				data_type = 1
 				if verbose:
@@ -318,20 +390,30 @@ def main():
 			if verbose:
 				print( "Text returned from grabData function: " + title )
 
-			# post to FaceBook or Twitter
+			# if posting to facebook
 			if str(config.get(section,"post_to_facebook")) is "1":
 				if verbose:
+					print( "Posting to FaceBook." )
 					print( "Passing to function the text: " + title )
 				postToFaceBook( verbose, config, section, title, filename )
 			if str(config.get(section,"post_to_twitter")) is "1":
+			# if posting to twitter
 				if verbose:
+					print( "Posting to Twitter." )
 					print( "Passing to function the text: " + title )
 				postToTwitter( verbose, config, section, title, filename )
+			# if posting to wordpress
+			if str(config.get(section,"post_to_wordpress")) is "1":
+				if verbose:
+					print( "Posting to WordPress." )
+					print( "Passing to function the text: " + title )
+				postToWordPress( verbose, config, section, title, filename )
+		# catch exceptions
 		except Exception as e:
 
 			# all errors are caught and printed within functions
 			x = 1
-#			print( e )
+			print( e )
 
 main()
 # remove all files downloaded during the program's run
