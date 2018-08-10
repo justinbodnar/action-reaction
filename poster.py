@@ -137,11 +137,9 @@ def postToFaceBook( verbose, config, section, text, filename ):
 			if verbose:
 				print( url )
 			files = {'file':open(filename,'rb')}
-			flag = requests.post(url, files=files).text
 		except Exception as e:
 			print( e )
 	if verbose:
-		print( "Flag: " + flag )
 		print( "Posted to " + section + "'s FaceBook at " + str( time.time()) )
 		print( "Text: " + text )
                 print( "Filename: " + filename )
