@@ -23,7 +23,6 @@ from wordpress_xmlrpc import WordPressPage
 from wordpress_xmlrpc.methods import posts
 from wordpress_xmlrpc.compat import xmlrpc_client
 from wordpress_xmlrpc.methods import media, posts
-#import os
 
 # verbose is global
 verbose = True
@@ -66,8 +65,6 @@ class Custom_WP_XMLRPC:
 		post.thumbnail = attachment_id
 		post.id = client.call(posts.NewPost(post))
 		print 'Post Successfully posted. Its Id is: ',post.id
-
-
 
 ##########################
 # post data to WordPress #
@@ -137,11 +134,9 @@ def postToFaceBook( verbose, config, section, text, filename ):
 			if verbose:
 				print( url )
 			files = {'file':open(filename,'rb')}
-			flag = requests.post(url, files=files).text
 		except Exception as e:
 			print( e )
 	if verbose:
-		print( "Flag: " + flag )
 		print( "Posted to " + section + "'s FaceBook at " + str( time.time()) )
 		print( "Text: " + text )
                 print( "Filename: " + filename )
@@ -235,18 +230,12 @@ def grabData( verbose, picorvid, config, section, reddit ):
 					# download the image or video
 					# 1 implies picture, 2 implies video
 					if picorvid is 1:
-						# if we're using reddit, just pass back the URL
-						if str( config.get( section, "post_to_wordpress" ) ) == 0:
-							r = requests.get( submission.url, allow_redirects=True)
-							filename = submission.url.split("/")[-1]
-							file = open( filename, 'wb' ).write( r.content )
-							if verbose:
-								print( "Downloaded image: " + filename )
-						else:
-							filename = submission.url
-							if verbose:
-								print( "URL: " + str( submission.url ) )
-						notDonoe = False
+						r = requests.get( submission.url, allow_redirects=True)
+						filename = submission.url.split("/")[-1]
+						file = open( filename, 'wb' ).write( r.content )
+						if verbose:
+							print( "Downloaded image: " + filename )
+						notDone = False
 					elif picorvid is 2:
 						ydl_opts = {}
 						with youtube_dl.YoutubeDL(ydl_opts) as ydl:
@@ -261,7 +250,7 @@ def grabData( verbose, picorvid, config, section, reddit ):
 						filename = "ERROR"
 					if verbose:
 						print( "Scraped submission: " + submission.title )
-					return submission.title, filename
+					return submission.title, filename, submission.url
 				except Exception as e:
 					if verbose:
 						print( e )
@@ -386,7 +375,7 @@ def main():
 				data_type = 2
 				if verbose:
 					print( "Scraping video for " + section + "." )
-			title, filename = grabData( verbose, data_type, config, section, reddit )
+			title, filename, url = grabData( verbose, data_type, config, section, reddit )
 			if verbose:
 				print( "Text returned from grabData function: " + title )
 
@@ -407,7 +396,7 @@ def main():
 				if verbose:
 					print( "Posting to WordPress." )
 					print( "Passing to function the text: " + title )
-				postToWordPress( verbose, config, section, title, filename )
+				postToWordPress( verbose, config, section, title, url )
 		# catch exceptions
 		except Exception as e:
 
@@ -419,3 +408,4 @@ main()
 # remove all files downloaded during the program's run
 # this line has only been tested on Ubuntu
 os.system( "rm $(ls -I \"*.ini\" -I \"*.py\" -I \"*.md\" )" )
+
