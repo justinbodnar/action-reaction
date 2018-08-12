@@ -134,6 +134,9 @@ def postToFaceBook( verbose, config, section, text, filename ):
 			if verbose:
 				print( url )
 			files = {'file':open(filename,'rb')}
+			flag = requests.post(url, files=files).text
+			if verbose:
+				print( flag )
 		except Exception as e:
 			print( e )
 	if verbose:
