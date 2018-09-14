@@ -1,4 +1,4 @@
-# social-media-automation
+# action-reaction
 A Python script to scrape subreddits and post image or video content to Twitter and FaceBook accounts.
 
 After months of writing new python scripts to automate FaceBook and Twitter pages, I found myself staring at a directory of python files. Enough was enough, and I decided to write a single script to read a configuration file where a single entry can be used to determine what's to be scraped, how it's to be scraped, and where it's to be posted to.
