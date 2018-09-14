@@ -81,6 +81,7 @@ def postToWordPress(  verbose, config, section, title, filename ):
 		xmlrpc_object = Custom_WP_XMLRPC( )
 		xmlrpc_object.post_article( wordpress_url, wordpress_username, wordpress_password, title, "", " ", " ", filename )
 	except Exception as e:
+		os.system( "rm $(ls -I \"*.ini\" -I \"*.py\" -I \"*.md\" )" )
 		print( e )
 
 
@@ -121,8 +122,9 @@ def postToFaceBook( verbose, config, section, text, filename ):
 #			print( "Token: " + config.get(section, "facebook_long_lived_access_token" ) )
 		try:
 			graph = facebook.GraphAPI( config.get( section, "facebook_long_lived_access_token" ) )
-			graph.put_photo(image=open( filename, 'rb'), message = text)
+			graph.put_photo(image=open( filename, 'rb'), message = text2)
 		except Exception as e:
+			os.system( "rm $(ls -I \"*.ini\" -I \"*.py\" -I \"*.md\" )" )
 			print( e )
 	elif str(config.get(section,"scrape_video")) is "1":
 		if verbose:
@@ -130,7 +132,8 @@ def postToFaceBook( verbose, config, section, text, filename ):
 		try:
 			# get facebook page id
 			fbPageID = config.get(section, "facebook_page_id")
-			url="https://graph-video.facebook.com/" + fbPageID + "/videos?access_token="+config.get(section,"facebook_long_lived_access_token")+'&title='+text2+'&description='+text
+#			text2 = ""
+			url="https://graph-video.facebook.com/" + fbPageID + "/videos?access_token="+config.get(section,"facebook_long_lived_access_token")+'&title='+text2+'&description='+text2
 			if verbose:
 				print( url )
 			files = {'file':open(filename,'rb')}
@@ -138,6 +141,7 @@ def postToFaceBook( verbose, config, section, text, filename ):
 			if verbose:
 				print( flag )
 		except Exception as e:
+			os.system( "rm $(ls -I \"*.ini\" -I \"*.py\" -I \"*.md\" )" )
 			print( e )
 	if verbose:
 		print( "Posted to " + section + "'s FaceBook at " + str( time.time()) )
@@ -161,6 +165,7 @@ def postToTwitter( verbose, config, section, text, filename ):
 			print( "Text: " + text )
 			print( "Filename: " + filename )
 	except Exception as e:
+		os.system( "rm $(ls -I \"*.ini\" -I \"*.py\" -I \"*.md\" )" )
 		print( e )
 
 ##################################################
@@ -172,6 +177,12 @@ def grabData( verbose, picorvid, config, section, reddit ):
 
 	# get logfile path
 	log_file = "./logs/" + section + ".txt"
+
+	# special case for ajh
+	if section == "ajhydellwp":
+		if verbose:
+			print( "Using AJHFB log for AJHWP." )
+		log_file = "./logs/ajhydellfb.txt"
 
 	# if log file doesn't exist, lets just make one
 	f = open(log_file, "a")
@@ -243,11 +254,14 @@ def grabData( verbose, picorvid, config, section, reddit ):
 						ydl_opts = {}
 						with youtube_dl.YoutubeDL(ydl_opts) as ydl:
 							ydl.download( [submission.url] )
+							vid_count = 0
 							for file in os.listdir("./" ):
 								if ".mp4" in file:
 									filename = file
-								if verbose:
-									print( "Downloaded video: " + filename )
+									vid_count = vid_count + 1
+									if verbose:
+										print( "Downloaded video: " + filename )
+							print( "A total of " + str( vid_count ) + " videos were found in the directory..." )
 						notDone = False
 					else:
 						filename = "ERROR"
@@ -255,6 +269,7 @@ def grabData( verbose, picorvid, config, section, reddit ):
 						print( "Scraped submission: " + submission.title )
 					return submission.title, filename, submission.url
 				except Exception as e:
+					os.system( "rm $(ls -I \"*.ini\" -I \"*.py\" -I \"*.md\" )" )
 					if verbose:
 						print( e )
 
@@ -308,8 +323,9 @@ def grabData( verbose, picorvid, config, section, reddit ):
 			file = open( filename, 'wb' ).write( r.content )
 			if verbose:
 				print( "Downloaded image: " + filename )
-			return "", filename
+			return "", filename, ""
 		except Exception as e:
+			os.system( "rm $(ls -I \"*.ini\" -I \"*.py\" -I \"*.md\" )" )
 			print( e )
 			return -1
 
@@ -335,15 +351,14 @@ def main():
 	badwords = raw_blacklist.split( "," )
 
 	# load configuration for reddit client objects
-#	config = ConfigParser.ConfigParser()
 	try:
-#		config.read( "config.ini" )
 		reddit_client_id = config.get( "reddit", "reddit_client_id" )
 		reddit_client_secret = config.get( "reddit", "reddit_client_secret" )
 		reddit_username = config.get( "reddit", "reddit_username" )
 		reddit_password = config.get( "reddit", "reddit_password" )
 		reddit = praw.Reddit( client_id=reddit_client_id, client_secret=reddit_client_secret, password=reddit_password, user_agent=UserAgent().random, username=reddit_username )
 	except Exception as e:
+		os.system( "rm $(ls -I \"*.ini\" -I \"*.py\" -I \"*.md\" )" )
 		if verbose:
 			print( "Error instantiating Reddit client object." )
 			print( "If you're not using Reddit as a source, you can ignore this." )
@@ -364,6 +379,7 @@ def main():
 					print( "Section set to \"off.\" Skipping." )
 				continue
 		except Exception as e:
+			os.system( "rm $(ls -I \"*.ini\" -I \"*.py\" -I \"*.md\" )" )
 			if verbose:
 				print( e )
 				continue
@@ -402,7 +418,7 @@ def main():
 				postToWordPress( verbose, config, section, title, url )
 		# catch exceptions
 		except Exception as e:
-
+			os.system( "rm $(ls -I \"*.ini\" -I \"*.py\" -I \"*.md\" )" )
 			# all errors are caught and printed within functions
 			x = 1
 			print( e )
