@@ -66,6 +66,10 @@ class Custom_WP_XMLRPC:
 		post.id = client.call(posts.NewPost(post))
 		print 'Post Successfully posted. Its Id is: ',post.id
 
+def cleardir():
+	os.system( "rm -f $(ls -I \"*.ini\" -I \"*.py\" -I \"*.md\" ) > /dev/null" )
+	os.system( "for f in *; do mv \"$f\" `echo $f | tr ' ' '_'`; done" )
+
 ##########################
 # post data to WordPress #
 def postToWordPress(  verbose, config, section, title, filename ):
@@ -81,7 +85,7 @@ def postToWordPress(  verbose, config, section, title, filename ):
 		xmlrpc_object = Custom_WP_XMLRPC( )
 		xmlrpc_object.post_article( wordpress_url, wordpress_username, wordpress_password, title, "", " ", " ", filename )
 	except Exception as e:
-		os.system( "rm $(ls -I \"*.ini\" -I \"*.py\" -I \"*.md\" )" )
+		cleardir()
 		print( e )
 
 
@@ -124,7 +128,7 @@ def postToFaceBook( verbose, config, section, text, filename ):
 			graph = facebook.GraphAPI( config.get( section, "facebook_long_lived_access_token" ) )
 			graph.put_photo(image=open( filename, 'rb'), message = text2)
 		except Exception as e:
-			os.system( "rm $(ls -I \"*.ini\" -I \"*.py\" -I \"*.md\" )" )
+			cleardir()
 			print( e )
 	elif str(config.get(section,"scrape_video")) is "1":
 		if verbose:
@@ -141,11 +145,11 @@ def postToFaceBook( verbose, config, section, text, filename ):
 			if verbose:
 				print( flag )
 		except Exception as e:
-			os.system( "rm $(ls -I \"*.ini\" -I \"*.py\" -I \"*.md\" )" )
+			cleardir()
 			print( e )
 	if verbose:
 		print( "Posted to " + section + "'s FaceBook at " + str( time.time()) )
-		print( "Text: " + text )
+#		print( "Text: " + text )
                 print( "Filename: " + filename )
 
 ###############################
@@ -162,10 +166,10 @@ def postToTwitter( verbose, config, section, text, filename ):
 		tweeter.PostUpdate( status=unicode( text ), media=filename )
 		if verbose:
 			print( "Posted to " + section + "'s Twitter at " + str(time.time()) )
-			print( "Text: " + text )
+#			print( "Text: " + text )
 			print( "Filename: " + filename )
 	except Exception as e:
-		os.system( "rm $(ls -I \"*.ini\" -I \"*.py\" -I \"*.md\" )" )
+		cleardir()
 		print( e )
 
 ##################################################
@@ -174,12 +178,14 @@ def grabData( verbose, picorvid, config, section, reddit ):
 
 	if verbose:
 		print( "Entering grabData function." )
+		print( "Deleting all old files" )
+		cleardir()
 
 	# get logfile path
 	log_file = "./logs/" + section + ".txt"
 
 	# special case for ajh
-	if section == "ajhydellwp":
+	if section == "ajhydellwp" or section == "ajhydelltw":
 		if verbose:
 			print( "Using AJHFB log for AJHWP." )
 		log_file = "./logs/ajhydellfb.txt"
@@ -195,15 +201,15 @@ def grabData( verbose, picorvid, config, section, reddit ):
 	if config.get( section, "use_reddit" ) is "1":
 		if verbose:
 			print( "Begining scrape of Reddit." )
-		submissions0 = reddit.subreddit(config.get( section, "subreddits")).hot(limit=250)
+		submissions0 = reddit.subreddit(config.get( section, "subreddits")).hot(limit=500)
 		if verbose:
 			print( "Subreddits: " + config.get( section, "subreddits" ) )
 		submissions = []
 		for submission in submissions0:
 #			print( submission )
 			submissions.append( submission )
-		if verbose:
-			print( str(len(submissions)) + " submissions scraped." )
+#		if verbose:
+#			print( str(len(submissions)) + " submissions scraped." )
 
 		# loop through submission options
 		notDone = True
@@ -213,27 +219,27 @@ def grabData( verbose, picorvid, config, section, reddit ):
 				# if we're looking for videos, skip non video entries
 				try:
 					if picorvid is 2:
-						if verbose:
-							print( submission.url )
+#						if verbose:
+#							print( submission.url )
 						if submission.url[8:9] != "v":
 							continue
-					if verbose:
-						print( "Checking submission: " + str(submission.title) )
+#					if verbose:
+#						print( "Checking submission: " + str(submission.title) )
 					badWord = False
 					global badwords
 					for badword in badwords:
 						if badword in submission.title:
-							if verbose:
-								print( "Found a bad word" )
+#							if verbose:
+#								print( "Found a bad word" )
 							badWord = True
 					if badWord:
-						if verbose:
-							print( "Skipping" )
+#						if verbose:
+#							print( "Skipping" )
 						continue
 					# check log for duplicates
 					if submission.title in open( log_file, "r" ).read():
-						if verbose:
-							print( "Found duplicate, skipping." )
+#						if verbose:
+#							print( "Found duplicate, skipping." )
 						continue
 					else:
 						if verbose:
@@ -269,8 +275,9 @@ def grabData( verbose, picorvid, config, section, reddit ):
 						print( "Scraped submission: " + submission.title )
 					return submission.title, filename, submission.url
 				except Exception as e:
-					os.system( "rm $(ls -I \"*.ini\" -I \"*.py\" -I \"*.md\" )" )
+					cleardir()
 					if verbose:
+#						print( "wtf..." )
 						print( e )
 
 	# check if we're using imgur
@@ -325,7 +332,7 @@ def grabData( verbose, picorvid, config, section, reddit ):
 				print( "Downloaded image: " + filename )
 			return "", filename, ""
 		except Exception as e:
-			os.system( "rm $(ls -I \"*.ini\" -I \"*.py\" -I \"*.md\" )" )
+			cleardir()
 			print( e )
 			return -1
 
@@ -358,7 +365,7 @@ def main():
 		reddit_password = config.get( "reddit", "reddit_password" )
 		reddit = praw.Reddit( client_id=reddit_client_id, client_secret=reddit_client_secret, password=reddit_password, user_agent=UserAgent().random, username=reddit_username )
 	except Exception as e:
-		os.system( "rm $(ls -I \"*.ini\" -I \"*.py\" -I \"*.md\" )" )
+		cleardir()
 		if verbose:
 			print( "Error instantiating Reddit client object." )
 			print( "If you're not using Reddit as a source, you can ignore this." )
@@ -379,8 +386,9 @@ def main():
 					print( "Section set to \"off.\" Skipping." )
 				continue
 		except Exception as e:
-			os.system( "rm $(ls -I \"*.ini\" -I \"*.py\" -I \"*.md\" )" )
+			cleardir()
 			if verbose:
+#				print( "wtf" )
 				print( e )
 				continue
 
@@ -418,13 +426,14 @@ def main():
 				postToWordPress( verbose, config, section, title, url )
 		# catch exceptions
 		except Exception as e:
-			os.system( "rm $(ls -I \"*.ini\" -I \"*.py\" -I \"*.md\" )" )
+			cleardir()
 			# all errors are caught and printed within functions
-			x = 1
+#			x = 1
+#			print( "wtf" )
 			print( e )
 
 main()
 # remove all files downloaded during the program's run
 # this line has only been tested on Ubuntu
-os.system( "rm $(ls -I \"*.ini\" -I \"*.py\" -I \"*.md\" )" )
+os.system( "rm -f $(ls -I \"*.ini\" -I \"*.py\" -I \"*.md\" )" )
 
