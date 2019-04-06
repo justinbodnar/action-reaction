@@ -21,6 +21,8 @@ WordPress (self-hosted)
 
 # Getting Started
 
+pip install -r requirements.txt
+
 The config.ini includes a template to start with. Variables use 1 or 0 as True or False.
 
 Add relevant API tokens.
