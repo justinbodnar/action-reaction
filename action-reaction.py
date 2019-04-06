@@ -9,6 +9,7 @@ import twitter
 import time
 import facebook
 import os
+import subprocess
 import praw
 import bs4
 import requests
@@ -26,9 +27,6 @@ from wordpress_xmlrpc.methods import media, posts
 
 # verbose is global
 verbose = True
-
-# these are black listed words
-badwords = [ ]
 
 ######################################################################
 # class for posting to WordPress                                     #
@@ -67,8 +65,9 @@ class Custom_WP_XMLRPC:
 		print 'Post Successfully posted. Its Id is: ',post.id
 
 def cleardir():
-	os.system( "rm -f $(ls -I \"*.ini\" -I \"*.py\" -I \"*.md\" ) > /dev/null" )
-	os.system( "for f in *; do mv \"$f\" `echo $f | tr ' ' '_'`; done" )
+	os.system( "rm -f $(ls -I \"*.ini\" -I \"logs\" -I \"*.py\" -I \"*.md\")" )
+	# why is this line here?
+#	os.system( "for f in *; do mv \"$f\" `echo $f | tr ' ' '_'`; done" )
 
 ##########################
 # post data to WordPress #
@@ -178,7 +177,6 @@ def grabData( verbose, picorvid, config, section, reddit ):
 
 	if verbose:
 		print( "Entering grabData function." )
-		print( "Deleting all old files" )
 		cleardir()
 
 	# get logfile path
@@ -277,7 +275,6 @@ def grabData( verbose, picorvid, config, section, reddit ):
 				except Exception as e:
 					cleardir()
 					if verbose:
-#						print( "wtf..." )
 						print( e )
 
 	# check if we're using imgur
@@ -388,8 +385,7 @@ def main():
 		except Exception as e:
 			cleardir()
 			if verbose:
-#				print( "wtf" )
-				print( e )
+#				print( e )
 				continue
 
 		try:
@@ -427,13 +423,7 @@ def main():
 		# catch exceptions
 		except Exception as e:
 			cleardir()
-			# all errors are caught and printed within functions
-#			x = 1
-#			print( "wtf" )
 			print( e )
 
 main()
-# remove all files downloaded during the program's run
-# this line has only been tested on Ubuntu
-os.system( "rm -f $(ls -I \"*.ini\" -I \"*.py\" -I \"*.md\" )" )
 
