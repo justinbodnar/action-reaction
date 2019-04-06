@@ -373,6 +373,8 @@ def main():
 	for section in config.sections():
 
 		if verbose:
+			print
+			print( "##########################" )
 			print( "Current config.ini section: " + section )
 
 		#################################################
