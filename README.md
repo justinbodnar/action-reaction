@@ -52,7 +52,7 @@ Imgur -> FaceBook   (image)
 
 Imgur -> WordPress  (image)
 
-NewsAPI -> FaceBook (link))
+NewsAPI -> FaceBook (link)
 
 Reddit -> Twitter   (image)
 
