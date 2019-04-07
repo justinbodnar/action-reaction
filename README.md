@@ -47,12 +47,15 @@ The "words" section of config.ini contains a single variable "blacklist" as a co
 # Current List of Valid Combinations
 
 Imgur -> Twitter    (image)
+
 Imgur -> FaceBook   (image)
+
 Imgur -> WordPress  (image)
 
 NewsAPI -> FaceBook (link))
 
 Reddit -> Twitter   (image)
-Reddit -> FaceBook  (image)
-Reddit -> FaceBook  (video)
 
+Reddit -> FaceBook  (image)
+
+Reddit -> FaceBook  (video)
