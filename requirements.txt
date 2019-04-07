@@ -1,0 +1,9 @@
+youtube_dl
+fake_useragent
+facebook-sdk
+twitter
+bs4
+praw
+imgurpython
+newsapi-python
+python-wordpress-xmlrpc

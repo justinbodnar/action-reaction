@@ -1,0 +1,36 @@
+
+##########################
+Current config.ini section: reddit
+
+##########################
+Current config.ini section: imgur
+
+##########################
+Current config.ini section: wordpress
+
+##########################
+Current config.ini section: words
+
+##########################
+Current config.ini section: account1
+Scraping text based content for account1.
+Entering grabData function.
+Logfile: ./logs/account1.txt
+Begining scrape of NewsAPI
+Queries: ['apex legends']
+
+{u'status': u'ok', u'articles': [{u'description': u'Fortnite\u2019s new Reboot Van will allow players to respawn their allies after they\u2019ve fallen. The feature will be added with the game\u2019s patch v8.30 update.', u'title': u'Fortnite introducing Apex Legends-style respawns in next patch', u'url': u'https://www.polygon.com/fortnite/2019/4/5/18297126/fortnite-squad-respawn-reboot-van', u'author': u'Austen Goslin', u'publishedAt': u'2019-04-05T18:44:58Z', u'content': u'Fortnitemay be in a controversial state of balance right now, but that hasnt slowed Epic down from updating the game. The developer announced on Friday afternoon that next weeks Fortnitepatch will include one of the biggest new introductions since launch with\u2026 [+1507 chars]', u'source': {u'id': u'polygon', u'name': u'Polygon'}, u'urlToImage': u'https://cdn.vox-cdn.com/thumbor/9Pdg_aYMOjkLB_Aek2_FtgKDlm4=/34x0:1849x950/fit-in/1200x630/cdn.vox-cdn.com/uploads/chorus_asset/file/16011080/reboot.jpg'}], u'totalResults': 1}
+ok
+Fortnite introducing Apex Legends-style respawns in next patch
+'ascii' codec can't encode character u'\u2019' in position 8: ordinal not in range(128)
+'NoneType' object is not iterable
+
+##########################
+Current config.ini section: account_2
+Scraping image for account_2.
+Entering grabData function.
+Logfile: ./logs/account_2.txt
+Begining scrape of Imgur.
+Instantiating Imgur client.
+(403) Invalid client_id
+'int' object is not iterable

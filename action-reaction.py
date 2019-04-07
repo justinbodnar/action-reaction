@@ -9,7 +9,6 @@ import twitter
 import time
 import facebook
 import os
-import subprocess
 import praw
 import bs4
 import requests
@@ -17,6 +16,7 @@ import random
 import urllib
 import ConfigParser
 
+from  newsapi import NewsApiClient
 from fake_useragent import UserAgent
 from imgurpython import ImgurClient
 from wordpress_xmlrpc import Client, WordPressPost
@@ -65,7 +65,7 @@ class Custom_WP_XMLRPC:
 		print 'Post Successfully posted. Its Id is: ',post.id
 
 def cleardir():
-	os.system( "rm -f $(ls -I \"*.ini\" -I \"logs\" -I \"*.py\" -I \"*.md\")" )
+	os.system( "rm -f $(ls -I \"*.ini\" -I \"logs\" -I \"*.py\" -I \"*.md\" -I \"*.txt\" )" )
 	# why is this line here?
 #	os.system( "for f in *; do mv \"$f\" `echo $f | tr ' ' '_'`; done" )
 
@@ -146,9 +146,19 @@ def postToFaceBook( verbose, config, section, text, filename ):
 		except Exception as e:
 			cleardir()
 			print( e )
+	# if we  get here, assume this is an article
+	else:
+		if verbose:
+			print( "Article is about to be posted" )
+		try:
+			graph = facebook.GraphAPI( config.get( section, "facebook_long_lived_access_token" ) )
+			# build attachment
+			attachment = { 'name':text.get("title"), 'link':text.get("url"), 'caption':text.get("description"), 'picture':text.get("urlToImage") }
+			graph.put_object( parent_object="me", connection_name="feed", message=text.get("description"), link=text.get("url") )
+		except Exception as e:
+			print( e )
 	if verbose:
 		print( "Posted to " + section + "'s FaceBook at " + str( time.time()) )
-#		print( "Text: " + text )
                 print( "Filename: " + filename )
 
 ###############################
@@ -204,10 +214,7 @@ def grabData( verbose, picorvid, config, section, reddit ):
 			print( "Subreddits: " + config.get( section, "subreddits" ) )
 		submissions = []
 		for submission in submissions0:
-#			print( submission )
 			submissions.append( submission )
-#		if verbose:
-#			print( str(len(submissions)) + " submissions scraped." )
 
 		# loop through submission options
 		notDone = True
@@ -217,27 +224,17 @@ def grabData( verbose, picorvid, config, section, reddit ):
 				# if we're looking for videos, skip non video entries
 				try:
 					if picorvid is 2:
-#						if verbose:
-#							print( submission.url )
 						if submission.url[8:9] != "v":
 							continue
-#					if verbose:
-#						print( "Checking submission: " + str(submission.title) )
 					badWord = False
 					global badwords
 					for badword in badwords:
 						if badword in submission.title:
-#							if verbose:
-#								print( "Found a bad word" )
 							badWord = True
 					if badWord:
-#						if verbose:
-#							print( "Skipping" )
 						continue
 					# check log for duplicates
 					if submission.title in open( log_file, "r" ).read():
-#						if verbose:
-#							print( "Found duplicate, skipping." )
 						continue
 					else:
 						if verbose:
@@ -277,6 +274,48 @@ def grabData( verbose, picorvid, config, section, reddit ):
 					if verbose:
 						print( e )
 
+	# check if we're using newsapi
+	elif config.get( section, "use_newsapi" ) is "1":
+		if verbose:
+			print( "Begining scrape of NewsAPI" )
+		# grab newsAPI key
+		newsapi_key = config.get( section, "newsapi_key" )
+		# grab query list
+		queries = config.get( section, "newsapi_query" )
+		queries = queries.split(',')
+		# verbose output
+		if verbose:
+			print( "Queries: " + str( queries ) )
+		# instantiate newsAPI object
+		newsapi = NewsApiClient( api_key=newsapi_key )
+		# get articles
+		articles = []
+		for query in queries:
+			article = newsapi.get_top_headlines( q=query, language="en" )
+			articles.append( article )
+		# print articles
+		for article in articles:
+			temps = article.get("articles")
+			for temp in temps:
+				try:
+					# check for duplicates
+					if temp.get("title") in open( log_file, "r" ).read():
+						continue
+					else:
+						log = open( log_file, "a+" )
+						log.write( temp.get("title") )
+						log.close()
+					# if we can print, we're good
+					print( "Returning " + temp.get( "title" ) )
+					return temp.get("title"), "FILENAME", temp
+					print( temp.get("title") )
+					print( temp.get("description") )
+					print( temp.get("publishedAt") )
+					print( temp.get("url") )
+					print( temp.get("urlToImage") )
+					print
+				except Exception as e:
+					print( e )
 	# check if we're using imgur
 	elif config.get( section, "use_imgur" ) is "1":
 		if verbose:
@@ -350,7 +389,6 @@ def main():
 	config.read( "config.ini" )
 
 	# load blacklist
-	global badwords
 	raw_blacklist = config.get( "words", "blacklist" )
 	badwords = raw_blacklist.split( "," )
 
@@ -386,9 +424,7 @@ def main():
 				continue
 		except Exception as e:
 			cleardir()
-			if verbose:
-#				print( e )
-				continue
+			continue
 
 		try:
 			# scrape data
@@ -400,15 +436,18 @@ def main():
 				data_type = 2
 				if verbose:
 					print( "Scraping video for " + section + "." )
-			title, filename, url = grabData( verbose, data_type, config, section, reddit )
+			else:
+				data_type = 3
+				if verbose:
+					print( "Scraping text based content for " + section + "." )
+			text, filename, title = grabData( verbose, data_type, config, section, reddit )
 			if verbose:
-				print( "Text returned from grabData function: " + title )
-
+				print( "Text returned from grabData function: " + text )
 			# if posting to facebook
 			if str(config.get(section,"post_to_facebook")) is "1":
 				if verbose:
 					print( "Posting to FaceBook." )
-					print( "Passing to function the text: " + title )
+					print( "Passing to function the text: " + text )
 				postToFaceBook( verbose, config, section, title, filename )
 			if str(config.get(section,"post_to_twitter")) is "1":
 			# if posting to twitter
