@@ -4,14 +4,17 @@
 ######################
 
 from lib.Action import Action
+from lib.Reaction import Reaction
 from lib.ImgurAction import ImgurAction
+from lib.FaceBookImageReaction import FaceBookImageReaction
 
-t = ImgurAction( "x", "y", api )
 
 print( "###########" )
-print( "name: " + t.name() )
-print( "log: " + t.log() )
+print( "name: " + a.name() )
+print( "log: " + a.log() )
 print( "api_config: " )
-print(  t.api_config() )
+print(  a.api_config() )
 print( "###########" )
-t.get_image()
+one, two = a.get_image()
+t = FaceBookImageReaction( "ronpaul", rapi, one, two )
+t.post_image()

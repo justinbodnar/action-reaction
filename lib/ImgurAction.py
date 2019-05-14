@@ -25,7 +25,6 @@ class ImgurAction( Action ):
 		attempts = 0
 		url = random.choice( urls )
 		while attempts < 50:
-			print( attempts )
 			if url in self._log:
 				url = random.choice( urls )
 				attempts = attempts + 1
@@ -38,4 +37,4 @@ class ImgurAction( Action ):
 		# update the logfile
 		self._log = self._log + "\n" +  url
 		self.update_log( )
-		print( url )
+		return filename, ""
