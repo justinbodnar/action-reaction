@@ -10,7 +10,7 @@ import random
 class ImgurAction( Action ):
 
 	# get a single image
-	def get_image( self ):
+	def act( self ):
 		# instantiate imgur api object
 		try:
 			imgur_client = ImgurClient( self._api_config["imgur_client_id"], self._api_config["imgur_client_secret"] )
